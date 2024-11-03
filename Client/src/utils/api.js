@@ -44,4 +44,7 @@ export const removeComputerFromRoom = (computerId) => api.post(`/computer/${comp
 export const getComputerProcesses = (computerId) => api.get(`/computer/${computerId}/processes`);
 export const getComputerNetwork = (computerId) => api.get(`/computer/${computerId}/network`);
 
+export const getAllUsers = () => api.get('/user/all');
+export const createUser = (userData) => api.post('/user/create', userData);
+export const createRoom = (roomData) => api.post('/room', roomData);
 export default api;

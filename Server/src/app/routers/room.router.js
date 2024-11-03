@@ -13,6 +13,7 @@ router.post('/manage/:id', checkPermission('manage'), roomController.manageCompu
 router.post('/:id/addUser', checkPermission('manage', 'admin'), roomController.addUserToRoom);
 router.post('/:id/removeUser', checkPermission('manage', 'admin'), roomController.removeUserFromRoom);
 router.post('/:id/addComputers', checkPermission('manage', 'admin'), roomController.addMultipleComputersToRoom);
+router.post('/', checkPermission('manage', 'admin'), roomController.createRoom);
 
 module.exports = router;
 

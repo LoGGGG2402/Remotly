@@ -22,7 +22,6 @@ const computerController = {
 
 	viewAllComputers: async (req, res) => {
 		try {
-			console.log("Fetching all computers");
 			const computers = await ComputerModel.findAll();
 			res.status(200).json({ computers });
 		} catch (error) {
@@ -104,7 +103,6 @@ const computerController = {
 		try {
 			const { id } = req.params;
 			const { roomId } = req.body;
-
 			const computer = await ComputerModel.findById(id);
 			if (!computer) {
 				return res.status(404).json({ error: "Computer not found" });
@@ -114,6 +112,7 @@ const computerController = {
 				...computer,
 				room_id: roomId,
 			};
+
 
 			await ComputerModel.update(updatedComputer);
 			res.status(200).json({

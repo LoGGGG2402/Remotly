@@ -1,6 +1,7 @@
 const RoomModel = require("../models/Room.model");
-const { ComputerModel } = require("../models/Computer.model");
-const { PermissionModel } = require("../models/Permission.model");
+const UserModel = require("../models/User.model");
+const {ComputerModel} = require("../models/Computer.model");
+const PermissionModel = require("../models/Permission.model");
 
 const roomController = {
 	createRoom: async (req, res) => {
@@ -26,7 +27,11 @@ const roomController = {
 
 	viewAllRooms: async (req, res) => {
 		try {
-			const rooms = await RoomModel.findAll();
+			if (req.user.role == "admin") {
+				const rooms = await RoomModel.findAll();
+				res.status(200).json({ rooms });
+			}
+			const rooms = await PermissionModel.findByUser(req.user.id);
 			res.status(200).json({ rooms });
 		} catch (error) {
 			console.error("Error getting all rooms:", error);
@@ -89,7 +94,10 @@ const roomController = {
 			}
 
 			const computers = await ComputerModel.findByRoomId(id);
-			res.status(200).json({ computers });
+			res.status(200).json({ 
+				"room": room,
+				"computers": computers
+			 });
 		} catch (error) {
 			console.error("Error getting computers in room:", error);
 			res.status(500).json({ error: "Internal server error" });
@@ -171,18 +179,14 @@ const roomController = {
 
 	addUserToRoom: async (req, res) => {
 		try {
-			if (!req.user || !req.user.id) {
-				return res.status(401).json({ error: "Unauthorized" });
-			}
-
 			if (req.user.role !== "admin") {
 				return res.status(403).json({ error: "Forbidden" });
 			}
 
-			const { roomId } = req.params;
+			const { id } = req.params;
 			const { userId } = req.body;
 
-			const room = await RoomModel.findById(roomId);
+			const room = await RoomModel.findById(id);
 			if (!room) {
 				return res.status(404).json({ error: "Room not found" });
 			}
@@ -192,15 +196,14 @@ const roomController = {
 				return res.status(404).json({ error: "User not found" });
 			}
 
-			const updatedRoom = {
-				...room,
-				users: [...room.users, userId],
-			};
-
-			await RoomModel.update(updatedRoom);
+			await PermissionModel.create({
+				user_id: userId,
+				room_id: id,
+				can_view: 1,
+				can_manage: 1,
+			});
 			res.status(200).json({
 				message: "User added to room successfully",
-				room: updatedRoom,
 			});
 		} catch (error) {
 			console.error("Error adding user to room:", error);
@@ -238,7 +241,6 @@ const roomController = {
 			res.status(500).json({ error: "Internal server error" });
 		}
 	},
-
 
 };
 

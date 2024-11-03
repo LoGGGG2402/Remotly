@@ -7,6 +7,7 @@ import ComputerList from './components/ComputerList';
 import ComputerMonitor from './components/Computer';
 import MenuBar from './components/MenuBar';
 import { getCookie } from './utils/cookies';
+import Users from './components/Users';
 function App() {
   let [user, setUser] = useState(null);
 
@@ -27,9 +28,10 @@ function App() {
         <div className="flex-grow ml-64">
           <div className="container mx-auto px-4 py-8">
             <Routes>
+              <Route path="/" element={user?.role === 'admin' ? <Users user = {user} /> : <RoomList user={user} />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/rooms" element={<RoomList />} />
-              <Route path="/rooms/:id" element={<RoomDetails />} />
+              <Route path="/rooms" element={<RoomList user={user} />} />
+              <Route path="/rooms/:id" element={<RoomDetails user={user} />} />
               <Route path="/computers" element={<ComputerList />} />
               <Route path="/computers/:id" element={<ComputerMonitor user={user} />} />
             </Routes>
