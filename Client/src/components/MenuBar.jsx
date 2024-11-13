@@ -5,14 +5,16 @@ import {
 	FaDoorOpen,
 	FaCog,
 	FaSignOutAlt,
-	FaSignInAlt
+	FaSignInAlt,
+	FaUsers  // Add this import
 } from "react-icons/fa";
 import { Link } from 'react-router-dom';
-import { getNumberOfRooms, getNumberOfComputers, logout } from "../utils/api";
+import { auth, users, computers, rooms  } from "../utils/api";
 
 const MenuBar = ({ user }) => {
 	const [roomCount, setRoomCount] = useState(0);
 	const [computerCount, setComputerCount] = useState(0);
+	const [userCount, setUserCount] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [activeMenuItem, setActiveMenuItem] = useState(null);
@@ -21,19 +23,18 @@ const MenuBar = ({ user }) => {
 	useEffect(() => {
 		const fetchData = async () => {
       try {
-        console.log('user', user);
         if (user){
-          const rooms = await getNumberOfRooms();
-          setRoomCount(rooms.data.numberOfRooms);
+          const roomsList = await rooms.getCount();
+          setRoomCount(roomsList.data.numberOfRooms);
           if (user.role === "admin") {
-            const computers = await getNumberOfComputers();
-            console.log('computers', computers.data.numberOfComputers);
-            setComputerCount(computers.data.numberOfComputers);
-            }
+            const computersList = await computers.getCount();
+            setComputerCount(computersList.data.numberOfComputers);
+            const usersList = await users.getCount();
+            setUserCount(usersList.data.numberOfUsers);
+          }
         }
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching data:", err);
         setLoading(false);
       }
 		};
@@ -42,7 +43,7 @@ const MenuBar = ({ user }) => {
 	}, [user]);
 
 	const menuItems = user ? [
-		{ name: "Dashboard", icon: FaHome, key: "dashboard" },
+		// { name: "Dashboard", icon: FaHome, key: "dashboard" },
 		{ name: "Rooms", icon: FaDoorOpen, key: "rooms", count: roomCount },
 		(user.role === "admin" && {
 			name: "Computers",
@@ -50,27 +51,44 @@ const MenuBar = ({ user }) => {
 			key: "computers",
 			count: computerCount,
 		}),
-		{ name: "Settings", icon: FaCog, key: "settings" },
+		(user.role === "admin" && {
+			name: "Users",
+			icon: FaUsers,
+			key: "users",
+			count: userCount,
+		}),
+		// { name: "Settings", icon: FaCog, key: "settings" },
 		{ name: "Logout", icon: FaSignOutAlt, key: "logout" },
 	] : [
 		{ name: "Login", icon: FaSignInAlt, key: "login" }
 	];
 
-	const handleMenuItemClick = (key) => {
+	const handleMenuItemClick = async (key) => {
+		if (key === 'logout') {
+			await handleLogout();
+			return;
+		}
+		
 		if (typeof setActiveMenuItem === 'function') {
 			setActiveMenuItem(key);
 		}
 		if (typeof onMenuItemClick === 'function') {
 			onMenuItemClick(key);
 		}
-    console.log(`Clicked menu item: ${key}`);
 	};
 
-  const handleLogout = async () => {
-    console.log('Logging out');
-    await logout();
-    window.location.href = "/login";
-  }
+	const handleLogout = async () => {
+		try {
+			await auth.logout();
+			// Clear any stored user data/tokens
+			localStorage.removeItem('token');
+			document.cookie = "user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+			// Force page refresh to clear React state
+			window.location.href = "/login";
+		} catch (error) {
+			setError('Logout failed. Please try again.');
+		}
+	}
 
 	if (loading) {
 		return (

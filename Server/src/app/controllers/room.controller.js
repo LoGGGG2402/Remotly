@@ -27,15 +27,16 @@ const roomController = {
 
 	viewAllRooms: async (req, res) => {
 		try {
-			if (req.user.role == "admin") {
+			if (req.user.role === "admin") {
 				const rooms = await RoomModel.findAll();
-				res.status(200).json({ rooms });
+				return res.status(200).json({ rooms });
+			} else {
+				const rooms = await PermissionModel.findByUser(req.user.id);
+				return res.status(200).json({ rooms });
 			}
-			const rooms = await PermissionModel.findByUser(req.user.id);
-			res.status(200).json({ rooms });
 		} catch (error) {
 			console.error("Error getting all rooms:", error);
-			res.status(500).json({ error: "Internal server error" });
+			return res.status(500).json({ error: "Internal server error" });
 		}
 	},
 
@@ -66,14 +67,22 @@ const roomController = {
 				return res.status(404).json({ error: "Room not found" });
 			}
 
-			// Check if there are any computers in the room
+			// Check if there are any computers in the room, and change the room_id to null
 			const computersInRoom = await ComputerModel.findByRoomId(id);
 			if (computersInRoom.length > 0) {
-				return res
-					.status(400)
-					.json({
-						error: "Cannot delete room with assigned computers",
-					});
+				await Promise.all(
+					computersInRoom.map((computer) =>
+						ComputerModel.update({ ...computer, room_id: null })
+					)
+				);
+			}
+
+			// check if there are any users with permissions to the room, and delete the permissions
+			const permissions = await PermissionModel.findByRoom(id);
+			if (permissions.length > 0) {
+				await Promise.all(
+					permissions.map((permission) => PermissionModel.delete(permission.id))
+				);
 			}
 
 			await RoomModel.delete(id);
@@ -184,7 +193,7 @@ const roomController = {
 			}
 
 			const { id } = req.params;
-			const { userId } = req.body;
+			const { userId, permission } = req.body;
 
 			const room = await RoomModel.findById(id);
 			if (!room) {
@@ -196,11 +205,16 @@ const roomController = {
 				return res.status(404).json({ error: "User not found" });
 			}
 
+			// Ensure at least one permission is set
+			if (!permission.can_view && !permission.can_manage) {
+				return res.status(400).json({ error: "At least one permission must be granted" });
+			}
+
 			await PermissionModel.create({
 				user_id: userId,
 				room_id: id,
-				can_view: 1,
-				can_manage: 1,
+				can_view: permission.can_view || 0,
+				can_manage: permission.can_manage || 0,
 			});
 			res.status(200).json({
 				message: "User added to room successfully",
@@ -211,12 +225,33 @@ const roomController = {
 		}
 	},
 
+	viewUsersInRoom: async (req, res) => {
+		try {
+			const { id } = req.params;
+
+			const room = await RoomModel.findById(id);
+			if (!room) {
+				return res.status(404).json({ error: "Room not found" });
+			}
+
+			const users = await UserModel.findByRoom(id);
+			users.forEach((user) => {
+				delete user.password_hash;
+			});
+			res.status(200).json({ users });
+		} catch (error) {
+			console.error("Error getting users in room:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	},
+
 	removeUserFromRoom: async (req, res) => {
 		try {
-			const { roomId } = req.params;
+			const { id } = req.params;
 			const { userId } = req.body;
+			console.log("removeUserFromRoom", id, userId);
 
-			const room = await RoomModel.findById(roomId);
+			const room = await RoomModel.findById(id);
 			if (!room) {
 				return res.status(404).json({ error: "Room not found" });
 			}
@@ -226,16 +261,9 @@ const roomController = {
 				return res.status(404).json({ error: "User not found" });
 			}
 
-			const updatedRoom = {
-				...room,
-				users: room.users.filter((id) => id !== userId),
-			};
-
-			await RoomModel.update(updatedRoom);
-			res.status(200).json({
-				message: "User removed from room successfully",
-				room: updatedRoom,
-			});
+			let result = await PermissionModel.deleteByUserAndRoom(userId, id);
+			console.log("result", result);
+			res.status(200).json({ message: "User removed from room successfully" });
 		} catch (error) {
 			console.error("Error removing user from room:", error);
 			res.status(500).json({ error: "Internal server error" });

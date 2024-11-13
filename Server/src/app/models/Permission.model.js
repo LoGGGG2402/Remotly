@@ -70,6 +70,26 @@ const UserRoomPermissionModel = {
       });
     });
   },
+
+  deleteByUserAndRoom: (userId, roomId) => {
+    return new Promise((resolve, reject) => {
+      const sql = 'DELETE FROM UserRoomPermissions WHERE user_id = ? AND room_id = ?';
+      db.run(sql, [userId, roomId], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  },
+
+  findByRoom : (roomId) => {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT * FROM UserRoomPermissions WHERE room_id = ?';
+      db.all(sql, [roomId], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  }
 };
 
 module.exports = UserRoomPermissionModel;

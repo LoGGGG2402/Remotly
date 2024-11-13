@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { getAllRooms, createRoom } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+import { rooms } from '../utils/api';
 
 const RoomList = ({ user }) => {
-  const [rooms, setRooms] = useState([]);
+  const [roomList, setRooms] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newRoom, setNewRoom] = useState({ name: '', description: '' });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await getAllRooms();
+        const response = await rooms.getAll();
         setRooms(response.data.rooms);
       } catch (error) {
         console.error('Error fetching rooms:', error);
@@ -23,12 +24,21 @@ const RoomList = ({ user }) => {
   const handleCreateRoom = async (e) => {
     e.preventDefault();
     try {
-      const response = await createRoom(newRoom);
-      setRooms([...rooms, response.data.room]);
+      const response = await rooms.create(newRoom);
+      setRooms([...roomList, response.data.room]);
       setNewRoom({ name: '', description: '' });
       setShowCreateForm(false);
     } catch (error) {
       console.error('Error creating room:', error);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId) => {
+    try {
+      await rooms.delete(roomId);
+      setRooms(roomList.filter(room => room.id !== roomId));
+    } catch (error) {
+      console.error('Error deleting room:', error);
     }
   };
 
@@ -73,11 +83,27 @@ const RoomList = ({ user }) => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {rooms.map((room) => (
-          <Link key={room.id} to={`/rooms/${room.id}`} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+        {roomList.map((room) => (
+          <div key={room.id} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <h2 className="text-xl font-bold mb-2">{room.name}</h2>
             <p className="text-gray-600">{room.description}</p>
-          </Link>
+            <div className="flex gap-2 mt-4">
+              <button 
+                onClick={() => navigate(`/rooms/${room.id}`)} 
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                View Details
+              </button>
+              {user?.role === 'admin' && (
+                <button 
+                  onClick={() => handleDeleteRoom(room.id)} 
+                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                >
+                  Delete Room
+                </button>
+              )}
+            </div>
+          </div>
         ))}
       </div>
     </div>

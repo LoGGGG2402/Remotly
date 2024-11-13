@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FaUserPlus, FaTrash, FaSpinner } from 'react-icons/fa';
 import { motion } from "framer-motion";
-import { getAllUsers, createUser } from '../utils/api';
+import { users } from '../utils/api';
 
 const Users = ({ user }) => {
-  const [users, setUsers] = useState([]);
+  const [fetchedUsers, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -22,7 +22,7 @@ const Users = ({ user }) => {
 
   const fetchUsers = async () => {
     try {
-      const response = await getAllUsers();
+      const response = await users.getAll();
       setUsers(response.data.users);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -36,7 +36,7 @@ const Users = ({ user }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await createUser(newUser);
+      await users.create(newUser);
       setShowCreateForm(false);
       setNewUser({
         username: '',
@@ -59,8 +59,8 @@ const Users = ({ user }) => {
     
     setLoading(true);
     try {
-      await UserModel.delete(userId);
-      setUsers(users.filter(user => user.id !== userId));
+      await users.delete(userId);
+      setUsers(fetchedUsers.filter(user => user.id !== userId));
     } catch (error) {
       console.error('Error deleting user:', error);
       setError('Failed to delete user');
@@ -198,7 +198,7 @@ const Users = ({ user }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
+            {fetchedUsers.map((user) => (
               <tr key={user.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">

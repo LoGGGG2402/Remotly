@@ -51,6 +51,16 @@ const UserModel = {
     });
   },
 
+  findByRoom: (roomId) => {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT * FROM Users JOIN UserRoomPermissions ON Users.id = UserRoomPermissions.user_id WHERE UserRoomPermissions.room_id = ?';
+      db.all(sql, [roomId], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  },
+
   update: (user) => {
     return new Promise((resolve, reject) => {
       const sql = 'UPDATE Users SET username = ?, password_hash = ?, email = ?, full_name = ?, is_admin = ? WHERE id = ?';

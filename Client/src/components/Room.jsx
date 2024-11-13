@@ -2,37 +2,49 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FaServer, FaUsers, FaSpinner, FaPlus, FaTrash, FaNetworkWired } from 'react-icons/fa';
 import { LazyLoadComponent } from 'react-lazy-load-image-component';
-import { getComputersInRoom, addComputerToRoom, removeComputerFromRoom, getAllUsers, addUserToRoom, removeUserFromRoom, getAllComputers } from '../utils/api';
+import { rooms, users, computers} from '../utils/api';
 
 const RoomDetails = ({ user }) => {
   const { id } = useParams();
-  const [room, setRoom] = useState(null);
-  const [computers, setComputers] = useState([]);
+  const [currentRoom, setRoom] = useState(null);
+  const [computerList, setComputers] = useState([]);
   const [showManageModal, setShowManageModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [users, setUsers] = useState([]);
+  const [userList, setUsers] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [availableComputers, setAvailableComputers] = useState([]);
   const [selectedComputer, setSelectedComputer] = useState('');
+  const [permissions, setPermissions] = useState({
+    can_view: false,
+    can_manage: false
+  });
+
+  const fetchRoomDetails = async () => {
+    try {
+      const response = await rooms.getComputers(id);
+      setRoom(response.data.room);
+      setComputers(response.data.computers);
+    } catch (error) {
+      console.error('Error fetching room details:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchRoomDetails = async () => {
-      try {
-        const response = await getComputersInRoom(id);
-        setRoom(response.data.room);
-        setComputers(response.data.computers);
-      } catch (error) {
-        console.error('Error fetching room details:', error);
-      }
-    };
-
     fetchRoomDetails();
   }, [id]);
 
   const fetchUsers = async () => {
     try {
-      const response = await getAllUsers();
+      let available = await rooms.getUsers(id);
+      let response = await users.getAll();
+      // delete available users from the list
+      response.data.users = response.data.users.filter(
+        (user) => !available.data.users.some((u) => u.user_id === user.id)
+      );
       setUsers(response.data.users);
+      setAvailableUsers(available.data.users);
+      
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -46,7 +58,7 @@ const RoomDetails = ({ user }) => {
 
   const fetchAvailableComputers = async () => {
     try {
-      const response = await getAllComputers();
+      const response = await computerList.getAll();
       console.log(response.data.computers);
       // Filter out computers that it's already in the room room_id !== null
       const available = response.data.computers.filter(
@@ -68,10 +80,9 @@ const RoomDetails = ({ user }) => {
     e.preventDefault();
     if (!selectedComputer) return;
     try {
-      const response = await addComputerToRoom(selectedComputer, id);
-      setComputers([...computers, response.data.computer]);
+      const response = await computers.addToRoom(selectedComputer, id);
+      setComputers([...computerList, response.data.computer]);
       setSelectedComputer('');
-      setShowManageModal(false);
     } catch (error) {
       console.error('Error adding computer:', error);
     }
@@ -79,8 +90,10 @@ const RoomDetails = ({ user }) => {
 
   const handleRemoveComputer = async (computerId) => {
     try {
-      await removeComputerFromRoom(id, computerId);
-      setComputers(computers.filter(comp => comp.id !== computerId));
+      await computers.removeFromRoom(computerId);
+      setComputers(computerList.filter(comp => comp.id !== computerId));
+      // reload the available computers
+      fetchAvailableComputers();
     } catch (error) {
       console.error('Error removing computer:', error);
     }
@@ -89,12 +102,15 @@ const RoomDetails = ({ user }) => {
   const handleAddUser = async (e) => {
     e.preventDefault();
     if (!selectedUser) return;
+    if (!permissions.can_view && !permissions.can_manage) {
+      alert('Please select at least one permission');
+      return;
+    }
     try {
-      console.log(selectedUser);
-      await addUserToRoom(id, selectedUser);
-      setShowUserModal(false);
+      await rooms.addUser(id, selectedUser, permissions);
       setSelectedUser('');
-      fetchRoomDetails();
+      setPermissions({ can_view: false, can_manage: false });
+      fetchUsers();
     } catch (error) {
       console.error('Error adding user to room:', error);
     }
@@ -102,8 +118,8 @@ const RoomDetails = ({ user }) => {
 
   const handleRemoveUser = async (userId) => {
     try {
-      await removeUserFromRoom(id, userId);
-      fetchRoomDetails();
+      await rooms.removeUser(id, userId);
+      fetchUsers();
     } catch (error) {
       console.error('Error removing user from room:', error);
     }
@@ -148,7 +164,7 @@ const RoomDetails = ({ user }) => {
     );
   };
 
-  if (!room) {
+  if (!currentRoom) {
     return (
       <div className="flex justify-center items-center h-64">
         <FaSpinner className="animate-spin text-4xl text-blue-500" />
@@ -160,8 +176,8 @@ const RoomDetails = ({ user }) => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{room.name}</h1>
-          <p className="text-gray-600 mt-2">{room.description}</p>
+          <h1 className="text-3xl font-bold text-gray-800">{currentRoom.name}</h1>
+          <p className="text-gray-600 mt-2">{currentRoom.description}</p>
         </div>
         {user?.role === 'admin' && (
           <div className="flex space-x-4">
@@ -215,7 +231,7 @@ const RoomDetails = ({ user }) => {
           <h2 className="text-xl font-bold mb-4 flex items-center">
             <FaUsers className="mr-2 text-green-500" /> Add User to Room
           </h2>
-          <form onSubmit={handleAddUser}>
+          <form onSubmit={handleAddUser} className="mb-6">
             <div className="mb-4">
               <label className="block text-gray-700 mb-2">Select User</label>
               <select
@@ -224,18 +240,75 @@ const RoomDetails = ({ user }) => {
                 className="w-full p-2 border rounded"
                 required
               >
-                <option value="">Select a user...</option>
-                {users.map((user) => (
+                <option value="">Select a new user to add...</option>
+                {userList.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.username}
                   </option>
                 ))}
               </select>
             </div>
-            <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            {selectedUser && (
+              <>
+              <div className="mb-4 p-4 bg-gray-50 rounded">
+                <label className="block text-gray-700 mb-2">Permissions for selected user</label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={permissions.can_view}
+                      onChange={(e) => setPermissions({...permissions, can_view: e.target.checked})}
+                      className="mr-2"
+                    />
+                    Can View
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={permissions.can_manage}
+                      onChange={(e) => setPermissions({...permissions, can_manage: e.target.checked})}
+                      className="mr-2"
+                    />
+                    Can Manage
+                  </label>
+                </div>
+              </div>
+              <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
               Add User
             </button>
+              </>
+            )}
+
           </form>
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-4">Current Room Users</h3>
+            <div className="space-y-4">
+              {availableUsers.map((user) => (
+                <div key={user.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium">{user.username}</p>
+                    <p className="text-sm text-gray-600">{user.full_name}</p>
+                    <div className="text-xs text-gray-500 mt-1">
+                      <span className={`mr-3 ${user.can_view ? 'text-green-600' : 'text-red-600'}`}>
+                        View: {user.can_view ? '✓' : '✗'}
+                      </span>
+                      <span className={user.can_manage ? 'text-green-600' : 'text-red-600'}>
+                        Manage: {user.can_manage ? '✓' : '✗'}
+                      </span>
+                    </div>
+                  </div>
+                  {user?.role === 'admin' && (
+                    <button 
+                      onClick={() => handleRemoveUser(user.user_id)} 
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -244,7 +317,7 @@ const RoomDetails = ({ user }) => {
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {computers.map((computer) => (
+        {computerList.map((computer) => (
           <LazyLoadComponent key={computer.id}>
             <ComputerCard
               computer={computer}

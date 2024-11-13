@@ -3,22 +3,20 @@ import { Link } from "react-router-dom";
 import { FaSearch, FaSpinner, FaWindows, FaLaptop, FaDesktop, FaInfoCircle } from "react-icons/fa";
 import { BsArrowRightShort } from "react-icons/bs";
 import { LazyLoadComponent } from "react-lazy-load-image-component";
-import { getAllComputers } from "../utils/api";
+import { computers } from "../utils/api";
 
 const ComputerList = () => {
-  const [computers, setComputers] = useState([]);
+  const [computerList, setComputers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchComputers = async () => {
       try {
-        const { data: { computers } } = await getAllComputers();
-        setComputers(computers);
-        console.log('computers', computers);
+        const { data } = await computers.getAll();
+        setComputers(data.computers);
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching computers:", error);
         setLoading(false);
       }
     };
@@ -26,7 +24,7 @@ const ComputerList = () => {
     fetchComputers();
   }, []);
 
-  const filteredComputers = computers.filter((computer) =>
+  const filteredComputers = computerList.filter((computer) =>
     Object.values(computer).some((value) => {
       if (value === null) {
         return false;
@@ -44,8 +42,6 @@ const ComputerList = () => {
 
     // computer status off if computer.last_seen is more than 10 minutes ago
     const tenMinutesAgo = new Date().getTime() - 10 * 60 * 1000;
-    console.log(tenMinutesAgo);
-    console.log(computer.last_updated);
     const lastSeen = new Date(computer.last_updated).getTime();
     const isOffline = lastSeen < tenMinutesAgo;
     const status = isOffline ? "OFF" : "ON";

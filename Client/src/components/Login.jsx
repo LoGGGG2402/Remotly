@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { ImSpinner8 } from "react-icons/im";
 import { motion } from "framer-motion";
-import { login } from "../utils/api";
+import { auth} from "../utils/api";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -13,7 +13,7 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const commonDomains = ["@gmail.com", "@yahoo.com", "@hotmail.com", "@outlook.com", "@example.com"];
+  const commonDomains = ["@example.com", "@yahoo.com", "@hotmail.com", "@outlook.com", "@gmail.com"];
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,21 +46,14 @@ const LoginPage = () => {
     setError(null);
 
     try {
-      let response = await login(email, password);
-      console.log('Login successful:', response.data);
-      // Reload the page to home page
+      let response = await auth.login(email, password);
       window.location.href = "/";
     } catch (error) {
-      console.error('Login error:', error);
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         setError(`Server error: ${error.response.data.message || error.response.statusText}`);
       } else if (error.request) {
-        // The request was made but no response was received
         setError('No response from server. Please check your network connection and try again.');
       } else {
-        // Something happened in setting up the request that triggered an Error
         setError(`Error: ${error.message}`);
       }
     } finally {

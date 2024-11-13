@@ -17,7 +17,7 @@ function App() {
       const user = JSON.parse(data.slice(2));
       setUser(user);
     } catch (error) {
-      console.error("Error fetching user:", error);
+      res.status(500).json({ error: 'Error parsing user data' });
     }
   }, []);
 
@@ -30,6 +30,7 @@ function App() {
             <Routes>
               <Route path="/" element={user?.role === 'admin' ? <Users user = {user} /> : <RoomList user={user} />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/users" element={<Users user={user} />} />
               <Route path="/rooms" element={<RoomList user={user} />} />
               <Route path="/rooms/:id" element={<RoomDetails user={user} />} />
               <Route path="/computers" element={<ComputerList />} />

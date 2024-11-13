@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { FaSearch, FaSync, FaNetworkWired, FaMicrochip, FaPlusCircle, FaMinusCircle, FaExchangeAlt } from "react-icons/fa";
-import { getComputerProcesses, getComputerNetwork, addComputerToRoom, removeComputerFromRoom, changeComputerRoom, getAllRooms } from "../utils/api";
+import { computers, rooms } from '../utils/api';
 
 const ComputerMonitor = ({ user }) => {
   const { id } = useParams();
@@ -12,27 +12,22 @@ const ComputerMonitor = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("pid");
   const [sortOrder, setSortOrder] = useState("asc");
-  const [rooms, setRooms] = useState([]);
+  const [roomList, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState("");
-
-
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const processesResponse = await getComputerProcesses(id);
-        const networkResponse = await getComputerNetwork(id);
-        if (user.role === "admin"){
-          const roomsResponse = await getAllRooms();
+        const processesResponse = await computers.getProcesses(id);
+        const networkResponse = await computers.getNetwork(id);
+        if (user.role === "admin") {
+          const roomsResponse = await rooms.getAll();
           setRooms(Array.isArray(roomsResponse.data.rooms) ? roomsResponse.data.rooms : []);
         }
-        console.log('Processes response:', processesResponse.data.processList);
-        console.log('Network response:', networkResponse.data.networkConnections);
         setProcesses(Array.isArray(processesResponse.data.processList) ? processesResponse.data.processList : []);
         setNetworkConnections(Array.isArray(networkResponse.data.networkConnections) ? networkResponse.data.networkConnections : []);
       } catch (error) {
-        console.error("Error fetching data:", error);
         setProcesses([]);
         setNetworkConnections([]);
       }
@@ -201,7 +196,7 @@ const ComputerMonitor = ({ user }) => {
   const handleAddToRoom = async () => {
     if (selectedRoom) {
       try {
-        await addComputerToRoom(id, selectedRoom);
+        await computers.addToRoom(id, selectedRoom);
         fetchData();
       } catch (error) {
         console.error("Error adding computer to room:", error);
@@ -212,7 +207,7 @@ const ComputerMonitor = ({ user }) => {
   const handleRemoveFromRoom = async () => {
     if (selectedRoom) {
       try {
-        await removeComputerFromRoom(id, selectedRoom);
+        await computers.removeFromRoom(id);
         fetchData();
       } catch (error) {
         console.error("Error removing computer from room:", error);
@@ -283,7 +278,7 @@ const ComputerMonitor = ({ user }) => {
               onChange={(e) => setSelectedRoom(e.target.value)}
             >
               <option value="">Select a room</option>
-              {rooms.map((room) => (
+              {roomList.map((room) => (
                 <option key={room.id} value={room.id}>
                   {room.name}
                 </option>
