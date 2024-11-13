@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaUserPlus, FaTrash, FaSpinner } from 'react-icons/fa';
-import { motion } from "framer-motion";
+import { FaUserPlus, FaTrash, FaUser, FaEnvelope, FaKey, FaIdCard, FaUserShield, FaSpinner } from 'react-icons/fa';
+import { motion, AnimatePresence } from "framer-motion";
 import { users } from '../utils/api';
 
 const Users = ({ user }) => {
@@ -69,6 +69,15 @@ const Users = ({ user }) => {
     }
   };
 
+  const getInitials = (fullname) => {
+    if (!fullname) return '';
+    return fullname
+      .split(' ')
+      .map(name => name[0])
+      .join('')
+      .toUpperCase();
+  };
+
   if (!user?.role === 'admin') {
     return <div className="text-center text-red-500">Access denied</div>;
   }
@@ -83,132 +92,174 @@ const Users = ({ user }) => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Users</h1>
-        <button
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex justify-between items-center mb-8"
+      >
+        <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+          <FaUserShield className="mr-3 text-blue-500" />
+          User Management
+        </h1>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowCreateForm(true)}
-          className="flex items-center bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="flex items-center bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 shadow-md transition-all duration-200"
         >
-          <FaUserPlus className="mr-2" /> Add User
-        </button>
-      </div>
+          <FaUserPlus className="mr-2" /> Add New User
+        </motion.button>
+      </motion.div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {showCreateForm && (
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-6 rounded-lg shadow-lg mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4"
         >
-          <h2 className="text-xl font-bold mb-4">Create New User</h2>
-          <form onSubmit={handleCreateUser}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-700 mb-2">Username</label>
-                <input
-                  type="text"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                  className="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 mb-2">Password</label>
-                <input
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                  className="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  className="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 mb-2">Full Name</label>
-                <input
-                  type="text"
-                  value={newUser.fullname}
-                  onChange={(e) => setNewUser({...newUser, fullname: e.target.value})}
-                  className="w-full p-2 border rounded"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 mb-2">Role</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                  className="w-full p-2 border rounded"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end mt-4 space-x-2">
-              <button
-                type="button"
-                onClick={() => setShowCreateForm(false)}
-                className="px-4 py-2 border rounded"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Create
-              </button>
-            </div>
-          </form>
+          {error}
         </motion.div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full">
+      <AnimatePresence>
+        {showCreateForm && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-white p-8 rounded-xl shadow-lg mb-8"
+          >
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Create New User</h2>
+            <form onSubmit={handleCreateUser} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="flex items-center text-gray-700 font-medium">
+                    <FaUser className="mr-2 text-blue-500" />
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.username}
+                    onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center text-gray-700 font-medium">
+                    <FaKey className="mr-2 text-blue-500" />
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center text-gray-700 font-medium">
+                    <FaEnvelope className="mr-2 text-blue-500" />
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center text-gray-700 font-medium">
+                    <FaIdCard className="mr-2 text-blue-500" />
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.fullname}
+                    onChange={(e) => setNewUser({...newUser, fullname: e.target.value})}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center text-gray-700 font-medium">
+                    <FaUserShield className="mr-2 text-blue-500" />
+                    Role
+                  </label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6 space-x-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  className="px-6 py-3 border rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 shadow-md transition-all duration-200"
+                >
+                  Create User
+                </motion.button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="bg-white rounded-xl shadow-lg overflow-hidden"
+      >
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
                 User
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {fetchedUsers.map((user) => (
-              <tr key={user.id}>
+              <motion.tr 
+                key={user.id}
+                whileHover={{ backgroundColor: '#f9fafb' }}
+                className="hover:bg-gray-50 transition-colors duration-150"
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
+                    <div className="w-10 h-10 flex-shrink-0 mr-4 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+                      {getInitials(user.fullname)}
+                    </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.username}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {user.fullname}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                      <div className="text-sm text-gray-500">{user.fullname}</div>
                     </div>
                   </div>
                 </td>
@@ -223,18 +274,20 @@ const Users = ({ user }) => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => handleDeleteUser(user.id)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-red-600 hover:text-red-900 p-2"
                   >
                     <FaTrash />
-                  </button>
+                  </motion.button>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </motion.div>
     </div>
   );
 };

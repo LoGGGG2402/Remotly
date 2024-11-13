@@ -1,40 +1,60 @@
 const User = require('../models/User.model');
 const bcrypt = require('bcrypt');
 const config = require('../../config');
-const { signAccessToken, verifyAccessToken } = require('../utils/jwt');
-
+const { signAccessToken, verifyAccessToken, signRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 
 const authController = {
     login: async (req, res) => {
         const { email, password } = req.body;
         try {
-          // Find user by email
-          const user = await User.findByEmail(email);
-          if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-          }
-    
-          // Check password
-          const isMatch = await bcrypt.compare(password, user.password_hash);
-          if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-          }
-    
-          // Generate JWT token
-          const token = await signAccessToken({ id: user._id, role: user.role });
-          res.cookie('token', token, { httpOnly: true, secure: true, maxAge: 3600000 });
-          let userData = { id: user._id, name: user.name, email: user.email, role: user.role };
-          res.cookie('user', userData, { secure: true, maxAge: 3600000 });
-    
-          res.json({ token, userData });
+            // Find user by email
+            const user = await User.findByEmail(email);
+            if (!user) {
+                return res.status(400).json({ message: 'Invalid credentials' });
+            }
+
+            // Check password
+            const isMatch = await bcrypt.compare(password, user.password_hash);
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Invalid credentials' });
+            }
+
+            // Generate JWT tokens
+            const accessToken = await signAccessToken({ id: user._id, role: user.role });
+            const refreshToken = await signRefreshToken({ id: user._id, role: user.role });
+
+            res.cookie('token', accessToken, { httpOnly: true, secure: true, maxAge: 900000 }); // 15 minutes
+            res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, maxAge: 604800000 }); // 7 days
+            let userData = { id: user._id, name: user.name, email: user.email, role: user.role };
+            res.cookie('user', userData, { secure: true, maxAge: 900000 });
+
+            res.json({ token: accessToken, refreshToken, userData });
         } catch (error) {
-          console.log('Error logging in:', error);
-          res.status(500).json({ message: 'Server error' });
+            console.log('Error logging in:', error);
+            res.status(500).json({ message: 'Server error' });
+        }
+    },
+
+    refresh: async (req, res) => {
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken) {
+            return res.status(401).json({ message: 'Refresh token required' });
+        }
+
+        try {
+            const decoded = await verifyRefreshToken(refreshToken);
+            const accessToken = await signAccessToken({ id: decoded.id, role: decoded.role });
+            
+            res.cookie('token', accessToken, { httpOnly: true, secure: true, maxAge: 900000 });
+            res.json({ token: accessToken });
+        } catch (error) {
+            res.status(401).json({ message: 'Invalid refresh token' });
         }
     },
 
     logout: (req, res) => {
         res.clearCookie('token');
+        res.clearCookie('refreshToken');
         res.status(200).json({ message: 'Logged out successfully' });
     },
 

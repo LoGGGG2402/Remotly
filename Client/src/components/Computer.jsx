@@ -15,24 +15,25 @@ const ComputerMonitor = ({ user }) => {
   const [roomList, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState("");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const processesResponse = await computers.getProcesses(id);
-        const networkResponse = await computers.getNetwork(id);
-        if (user.role === "admin") {
-          const roomsResponse = await rooms.getAll();
-          setRooms(Array.isArray(roomsResponse.data.rooms) ? roomsResponse.data.rooms : []);
-        }
-        setProcesses(Array.isArray(processesResponse.data.processList) ? processesResponse.data.processList : []);
-        setNetworkConnections(Array.isArray(networkResponse.data.networkConnections) ? networkResponse.data.networkConnections : []);
-      } catch (error) {
-        setProcesses([]);
-        setNetworkConnections([]);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const processesResponse = await computers.getProcesses(id);
+      const networkResponse = await computers.getNetwork(id);
+      if (user.role === "admin") {
+        const roomsResponse = await rooms.getAll();
+        setRooms(Array.isArray(roomsResponse.data.rooms) ? roomsResponse.data.rooms : []);
       }
-      setLoading(false);
-    };
+      setProcesses(Array.isArray(processesResponse.data.processList) ? processesResponse.data.processList : []);
+      setNetworkConnections(Array.isArray(networkResponse.data.networkConnections) ? networkResponse.data.networkConnections : []);
+    } catch (error) {
+      setProcesses([]);
+      setNetworkConnections([]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchData();
   }, [user]);
 
@@ -73,46 +74,55 @@ const ComputerMonitor = ({ user }) => {
       });
   };
 
+  const tableStyles = {
+    header: "sticky top-0 px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors",
+    cell: "px-6 py-4 whitespace-nowrap text-sm text-gray-900",
+    row: "hover:bg-gray-50 transition-colors"
+  };
+
+  const buttonStyles = {
+    primary: "px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors",
+    secondary: "px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors",
+    danger: "px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+  };
+
+  const renderTableHeader = (label, key) => (
+    <th className={tableStyles.header} onClick={() => handleSort(key)}>
+      <div className="flex items-center space-x-1">
+        <span>{label}</span>
+        {sortBy === key && (
+          <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+        )}
+      </div>
+    </th>
+  );
+
   const renderProcesses = () => {
     const filteredProcesses = filterAndSortData(processes);
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-300">
-          <thead>
-            <tr className="bg-gray-100">
-              <th
-                className="px-4 py-2 cursor-pointer"
-                onClick={() => handleSort("pid")}
-              >
-                PID {sortBy === "pid" && (sortOrder === "asc" ? "▲" : "▼")}
-              </th>
-              <th
-                className="px-4 py-2 cursor-pointer"
-                onClick={() => handleSort("name")}
-              >
-                Name {sortBy === "name" && (sortOrder === "asc" ? "▲" : "▼")}
-              </th>
-              <th
-                className="px-4 py-2 cursor-pointer"
-                onClick={() => handleSort("username")}
-              >
-                Username{" "}
-                {sortBy === "username" && (sortOrder === "asc" ? "▲" : "▼")}
-              </th>
-              <th className="px-4 py-2">Status</th>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {renderTableHeader("PID", "pid")}
+              {renderTableHeader("Name", "name")}
+              {renderTableHeader("Username", "username")}
+              {renderTableHeader("Status", "status")}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {filteredProcesses.map((process) => (
-              <tr key={process.pid} className="border-t border-gray-300">
-                <td className="px-4 py-2">{process.pid}</td>
-                <td className="px-4 py-2">{process.name}</td>
-                <td className="px-4 py-2">{process.username}</td>
-                <td className="px-4 py-2">
-                  <span
-                    className={`inline-block w-3 h-3 rounded-full ${process.status === "running" ? "bg-green-500" : "bg-gray-500"}`}
-                    title={process.status}
-                  ></span>
+              <tr key={process.pid} className={tableStyles.row}>
+                <td className={tableStyles.cell}>{process.pid}</td>
+                <td className={tableStyles.cell}>{process.name}</td>
+                <td className={tableStyles.cell}>{process.username}</td>
+                <td className={tableStyles.cell}>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                    ${process.status === "running" 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-gray-100 text-gray-800"}`}>
+                    {process.status}
+                  </span>
                 </td>
               </tr>
             ))}
@@ -125,57 +135,29 @@ const ComputerMonitor = ({ user }) => {
   const renderNetworkConnections = () => {
     const filteredConnections = filterAndSortData(networkConnections);
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-300">
-          <thead>
-            <tr className="bg-gray-100">
-              <th
-                className="px-4 py-2 cursor-pointer"
-                onClick={() => handleSort("fd")}
-              >
-                FD {sortBy === "fd" && (sortOrder === "asc" ? "▲" : "▼")}
-              </th>
-              <th
-                className="px-4 py-2 cursor-pointer"
-                onClick={() => handleSort("family")}
-              >
-                Family {sortBy === "family" && (sortOrder === "asc" ? "▲" : "▼")}
-              </th>
-              <th
-                className="px-4 py-2 cursor-pointer"
-                onClick={() => handleSort("type")}
-              >
-                Type {sortBy === "type" && (sortOrder === "asc" ? "▲" : "▼")}
-              </th>
-              <th className="px-4 py-2">Local Address</th>
-              <th className="px-4 py-2">Remote Address</th>
-              <th
-                className="px-4 py-2 cursor-pointer"
-                onClick={() => handleSort("status")}
-              >
-                Status {sortBy === "status" && (sortOrder === "asc" ? "▲" : "▼")}
-              </th>
-              <th
-                className="px-4 py-2 cursor-pointer"
-                onClick={() => handleSort("pid")}
-              >
-                PID {sortBy === "pid" && (sortOrder === "asc" ? "▲" : "▼")}
-              </th>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {renderTableHeader("PID", "pid")}
+              {renderTableHeader("Type", "type")}
+              {renderTableHeader("Local Address", "laddr")}
+              {renderTableHeader("Remote Address", "raddr")}
+              {renderTableHeader("Status", "status")}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {filteredConnections.map((connection, index) => (
-              <tr key={index} className="border-t border-gray-300">
-                <td className="px-4 py-2">{connection.fd}</td>
-                <td className="px-4 py-2">{connection.family}</td>
-                <td className="px-4 py-2">{connection.type}</td>
-                <td className="px-4 py-2">
+              <tr key={index} className={tableStyles.row}>
+                <td className={tableStyles.cell}>{connection.pid}</td>
+                <td className={tableStyles.cell}>{connection.type}</td>
+                <td className={tableStyles.cell}>
                   {connection.laddr ? `${connection.laddr.ip}:${connection.laddr.port}` : 'N/A'}
                 </td>
-                <td className="px-4 py-2">
+                <td className={tableStyles.cell}>
                   {connection.raddr ? `${connection.raddr.ip}:${connection.raddr.port}` : 'N/A'}
                 </td>
-                <td className="px-4 py-2">
+                <td className={tableStyles.cell}>
                   <span
                     className={`inline-block px-2 py-1 rounded ${
                       connection.status === "ESTABLISHED" ? "bg-green-500 text-white" : "bg-yellow-500 text-black"
@@ -184,7 +166,7 @@ const ComputerMonitor = ({ user }) => {
                     {connection.status}
                   </span>
                 </td>
-                <td className="px-4 py-2">{connection.pid}</td>
+                
               </tr>
             ))}
           </tbody>
@@ -227,95 +209,101 @@ const ComputerMonitor = ({ user }) => {
   };
 
   return (
-    <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-        Computer Monitor
-      </h1>
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex space-x-4">
-            <button
-              className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${activeTab === "processes" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
-              onClick={() => setActiveTab("processes")}
-            >
-              <FaMicrochip className="inline-block mr-2" />
-              Processes
-            </button>
-            <button
-              className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${activeTab === "network" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
-              onClick={() => setActiveTab("network")}
-            >
-              <FaNetworkWired className="inline-block mr-2" />
-              Network Connections
-            </button>
+    <div className="min-h-screen bg-gray-50 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h1 className="text-2xl font-bold text-gray-900">Computer Monitor</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={handleSearch}
-              />
-              <FaSearch className="absolute left-3 top-3 text-gray-400" />
+          <div className="p-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-4">
+                <button
+                  className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${activeTab === "processes" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+                  onClick={() => setActiveTab("processes")}
+                >
+                  <FaMicrochip className="inline-block mr-2" />
+                  Processes
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${activeTab === "network" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
+                  onClick={() => setActiveTab("network")}
+                >
+                  <FaNetworkWired className="inline-block mr-2" />
+                  Network Connections
+                </button>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    value={searchTerm}
+                    onChange={handleSearch}
+                  />
+                  <FaSearch className="absolute left-3 top-3 text-gray-400" />
+                </div>
+                <button
+                  className={buttonStyles.primary}
+                  onClick={handleRefresh}
+                  disabled={loading}
+                >
+                  <FaSync className={`inline-block mr-2 ${loading ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+              </div>
             </div>
-            <button
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-              onClick={handleRefresh}
-              disabled={loading}
-            >
-              <FaSync className={`inline-block mr-2 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
+            {user && user.role === "admin" && (
+              <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg">
+                <select
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={selectedRoom}
+                  onChange={(e) => setSelectedRoom(e.target.value)}
+                >
+                  <option value="">Select a room</option>
+                  {roomList.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className={buttonStyles.primary}
+                  onClick={handleAddToRoom}
+                >
+                  <FaPlusCircle className="inline-block mr-2" />
+                  Add to Room
+                </button>
+                <button
+                  className={buttonStyles.danger}
+                  onClick={handleRemoveFromRoom}
+                >
+                  <FaMinusCircle className="inline-block mr-2" />
+                  Remove from Room
+                </button>
+                <button
+                  className={buttonStyles.secondary}
+                  onClick={handleChangeRoom}
+                >
+                  <FaExchangeAlt className="inline-block mr-2" />
+                  Change Room
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="px-6 pb-6">
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
+              </div>
+            ) : (
+              <div className="transition-all duration-300 ease-in-out">
+                {activeTab === "processes" ? renderProcesses() : renderNetworkConnections()}
+              </div>
+            )}
           </div>
         </div>
-        {user && user.role === "admin" && (
-          <div className="flex items-center space-x-4 mb-4">
-            <select
-              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={selectedRoom}
-              onChange={(e) => setSelectedRoom(e.target.value)}
-            >
-              <option value="">Select a room</option>
-              {roomList.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.name}
-                </option>
-              ))}
-            </select>
-            <button
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
-              onClick={handleAddToRoom}
-            >
-              <FaPlusCircle className="inline-block mr-2" />
-              Add to Room
-            </button>
-            <button
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-              onClick={handleRemoveFromRoom}
-            >
-              <FaMinusCircle className="inline-block mr-2" />
-              Remove from Room
-            </button>
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onClick={handleChangeRoom}
-            >
-              <FaExchangeAlt className="inline-block mr-2" />
-              Change Room
-            </button>
-          </div>
-        )}
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : (
-          <div className="transition-all duration-300 ease-in-out">
-            {activeTab === "processes" ? renderProcesses() : renderNetworkConnections()}
-          </div>
-        )}
       </div>
     </div>
   );

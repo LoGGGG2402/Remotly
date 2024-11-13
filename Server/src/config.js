@@ -4,8 +4,10 @@ const config = {
   databasePath: process.env.DATABASE_PATH || './database.sqlite',
   jwtSecret: process.env.JWT_SECRET || 'secret',
   jwtExpiration: process.env.JWT_EXPIRATION || '1h',
-  jwtAlgorithm: process.env.JWT_ALGORITHM || 'HS256'
-  
+  jwtAlgorithm: process.env.JWT_ALGORITHM || 'HS256',
+  refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET || 'refresh-secret',
+  refreshTokenExpiration: process.env.REFRESH_TOKEN_EXPIRATION || '7d',
+  accessTokenExpiration: process.env.ACCESS_TOKEN_EXPIRATION || '15m'
 };
 
 module.exports = config;

@@ -28,7 +28,7 @@ function App() {
         <div className="flex-grow ml-64">
           <div className="container mx-auto px-4 py-8">
             <Routes>
-              <Route path="/" element={user?.role === 'admin' ? <Users user = {user} /> : <RoomList user={user} />} />
+              <Route path="/" element={user ? <RoomList user = {user} /> : <Login />} />
               <Route path="/login" element={<Login />} />
               <Route path="/users" element={<Users user={user} />} />
               <Route path="/rooms" element={<RoomList user={user} />} />

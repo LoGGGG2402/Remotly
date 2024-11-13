@@ -11,6 +11,20 @@ const api = axios.create({
   withCredentials: true,
 });
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Request interceptor for auth token
 api.interceptors.request.use(
   (config) => {
@@ -23,12 +37,51 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+        .then(token => {
+          originalRequest.headers['Authorization'] = `Bearer ${token}`;
+          return api(originalRequest);
+        })
+        .catch(err => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const { data } = await api.post('/auth/refresh');
+        const { token } = data;
+        localStorage.setItem('token', token);
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        processQueue(null, token);
+        return api(originalRequest);
+      } catch (err) {
+        processQueue(err, null);
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth endpoints
 export const auth = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   logout: () => api.post('/auth/logout'),
   createAccount: (name, email, password, role) => 
-    api.post('/auth/create-account', { name, email, password, role })
+    api.post('/auth/create-account', { name, email, password, role }),
+  refresh: () => api.post('/auth/refresh')
 };
 
 // Room endpoints

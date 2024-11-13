@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaGoogle, FaGithub, FaLock, FaEnvelope, FaUserAstronaut } from "react-icons/fa";
 import { ImSpinner8 } from "react-icons/im";
-import { motion } from "framer-motion";
-import { auth} from "../utils/api";
+import { motion, AnimatePresence } from "framer-motion";
+import { auth } from "../utils/api";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -70,22 +70,50 @@ const LoginPage = () => {
     }
   }, [emailError, passwordError]);
 
+  const fadeIn = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-4 overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md relative"
+        variants={fadeIn}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md relative"
       >
-        <motion.h2
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="text-3xl font-bold mb-6 text-center text-gray-800"
+        {/* Logo Section with enhanced animation */}
+        <motion.div
+          className="text-center mb-8"
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          Login
-        </motion.h2>
+          <div className="relative h-24 w-24 mx-auto mb-4">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+              animate={{
+                scale: [1, 1.2, 1],
+                rotate: [0, 180, 360]
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            />
+            <FaUserAstronaut className="relative h-full w-full text-white p-4" />
+          </div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Welcome Back
+          </h2>
+          <p className="text-gray-600 mt-2">Please sign in to continue</p>
+        </motion.div>
+
+        {/* Enhanced Form Section */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -193,18 +221,20 @@ const LoginPage = () => {
             </motion.button>
           </motion.div>
         </form>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="absolute -top-10 -left-10 w-20 h-20 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"
-        />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.5 }}
-          className="absolute -bottom-10 -right-10 w-20 h-20 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"
-        />
+
+        {/* Enhanced Error Display */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-4 p-3 rounded-lg bg-red-100 text-red-700 text-sm border border-red-200"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

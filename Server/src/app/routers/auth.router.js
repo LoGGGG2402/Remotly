@@ -7,6 +7,7 @@ router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 router.post('/logout', authController.logout);
 router.post('/create-account', authMiddleware, authController.createAccount);
+router.post('/refresh', authController.refresh);
 
 module.exports = router;
 
