@@ -17,7 +17,7 @@ function App() {
       const user = JSON.parse(data.slice(2));
       setUser(user);
     } catch (error) {
-      res.status(500).json({ error: 'Error parsing user data' });
+      console.log(error);
     }
   }, []);
 
