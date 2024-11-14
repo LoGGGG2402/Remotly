@@ -25,13 +25,13 @@ const checkPermission = (action, scope = 'room') => async (req, res, next) => {
       if (!computer) {
         return res.status(404).json({ error: 'Computer not found' });
       }
-      roomId = computer.roomId;
+      roomId = computer.room_id;
     } else {
-      roomId = req.params.roomId || req.body.roomId;
+      roomId = req.params.id || req.body.id;
     }
-
+    console.log('roomId:', roomId);
     const permission = await UserRoomPermissionModel.findByUserAndRoom(userId, roomId);
-
+    console.log('permission:', permission);
     if (!permission) {
       return res.status(403).json({ error: 'You do not have permission for this room' });
     }

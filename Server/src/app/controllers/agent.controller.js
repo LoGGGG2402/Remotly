@@ -1,4 +1,4 @@
-const { ComputerModel } = require('../models/Computer.model');
+const ComputerModel = require('../models/Computer.model');
 
 const agentController = {
   connect: async (req, res) => {

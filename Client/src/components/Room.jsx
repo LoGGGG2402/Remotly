@@ -325,14 +325,12 @@ const RoomDetails = ({ user }) => {
                       </span>
                     </div>
                   </div>
-                  {user?.role === 'admin' && (
                     <button 
                       onClick={() => handleRemoveUser(user.user_id)} 
                       className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
                     >
                       Remove
                     </button>
-                  )}
                 </div>
               ))}
             </div>

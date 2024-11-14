@@ -72,4 +72,4 @@ const ComputerModel = {
   },
 };
 
-module.exports = { ComputerModel };
+module.exports = ComputerModel;

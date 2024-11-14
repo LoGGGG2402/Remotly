@@ -1,6 +1,6 @@
 const RoomModel = require("../models/Room.model");
 const UserModel = require("../models/User.model");
-const {ComputerModel} = require("../models/Computer.model");
+const ComputerModel = require("../models/Computer.model");
 const PermissionModel = require("../models/Permission.model");
 
 const roomController = {
@@ -31,7 +31,8 @@ const roomController = {
 				const rooms = await RoomModel.findAll();
 				return res.status(200).json({ rooms });
 			} else {
-				const rooms = await PermissionModel.findByUser(req.user.id);
+				console.log("req.user.id", req.user.id);
+				const rooms = await RoomModel.getByUser(req.user.id);
 				return res.status(200).json({ rooms });
 			}
 		} catch (error) {

@@ -50,6 +50,20 @@ const RoomModel = {
       });
     });
   },
+
+  getByUser: (userId) => {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        SELECT r.* FROM Rooms r
+        JOIN UserRoomPermissions p ON r.id = p.room_id
+        WHERE p.user_id = ?
+      `;
+      db.all(sql, [userId], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  }
 };
 
 module.exports = RoomModel;

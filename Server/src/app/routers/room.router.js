@@ -5,9 +5,9 @@ const { checkPermission } = require('../middlewares/permission.middleware')
 const router = Router();
 
 router.get('/amount', roomController.getNumberOfRooms);
-router.get('/all', checkPermission('view', 'admin'), roomController.viewAllRooms);
+router.get('/all', roomController.viewAllRooms);
 router.get('/:id', checkPermission('view'), roomController.viewComputersInRoom);
-router.post('/manage/:id', checkPermission('manage'), roomController.manageComputersInRoom);
+router.post('/:id/manage', checkPermission('manage'), roomController.manageComputersInRoom);
 
 // Admin routes
 router.post('/', checkPermission('manage', 'admin'), roomController.createRoom);

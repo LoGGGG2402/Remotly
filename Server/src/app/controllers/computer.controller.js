@@ -1,4 +1,4 @@
-const { ComputerModel } = require("../models/Computer.model");
+const ComputerModel = require("../models/Computer.model");
 const RoomModel = require("../models/Room.model");
 const {
 	sendCommandToComputer,

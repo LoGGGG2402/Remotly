@@ -20,8 +20,8 @@ const authController = {
             }
 
             // Generate JWT tokens
-            const accessToken = await signAccessToken({ id: user._id, role: user.role });
-            const refreshToken = await signRefreshToken({ id: user._id, role: user.role });
+            const accessToken = await signAccessToken({ id: user.id, role: user.role });
+            const refreshToken = await signRefreshToken({ id: user.id, role: user.role });
 
             res.cookie('token', accessToken, { httpOnly: true, secure: true, maxAge: 900000 }); // 15 minutes
             res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, maxAge: 604800000 }); // 7 days
